@@ -1,7 +1,7 @@
 {
-  "name": "komz-executor-dev",
+  "name": "komz-executor",
   "version": "0.0.1",
-  "homepage": "https://pavship.github.io/komz-executor-dev",
+  "homepage": "https://pavship.github.io/komz-executor",
   "private": true,
   "dependencies": {
     "aws-amplify": "^0.2.9",
