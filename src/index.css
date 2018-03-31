@@ -66,14 +66,17 @@ body {
 .komz-no-margin {
   margin: 0 !important;
 }
+.komz-no-padding {
+  padding: 0 !important;
+}
 
 /* LAYOUT */
 
 .komz-exec-container {
   display: block;
-  /* margin-left: auto!important;
+  margin-left: auto!important;
   margin-right: auto!important;
-  max-width: 320px !important; */
+  max-width: 420px !important;
 }
 
 .komz-navbar {
@@ -83,6 +86,10 @@ body {
 .komz-navbar-menu-left-item {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
+}
+
+.komz-navbar-menu-item-profile::before {
+  background: none !important;
 }
 
 .komz-pushable {
@@ -107,10 +114,14 @@ body {
   margin-left: 10px !important;
 }
 
-.komz-sidebar-col-right-remove {
+.komz-sidebar-col-right-icon {
   font-size: 1em !important;
   margin: 0 0 12px 10px !important;
   vertical-align: bottom;
+}
+
+.komz-sidebar-col-right-message {
+  padding: 1em !important;
 }
 
 /* EXECUTOR VIEW */

@@ -14,35 +14,46 @@ import { curWork } from '../graphql/workQueries'
 
 class ExecView extends Component {
   state = {
-    //this component is the context provider of selected products that executor is working on
+    //selected products that executor works with
     selected: [],
+    //selected products qty
     prodCount: 0,
-    //this component keeps mainWorkIsInProgress status to indicate it on the NavBar
-    mainWorkIsInProgress: false
+    //mainWorkIsInProgress used
+      // in the NavBar to indicate that executor works with selected products
+      // in the Sidebar to restrict altering of selected set of products
+    mainWorkIsInProgress: false,
+    //block CtrlPanel until Exec gets new currentWork from server
+    panelBlockLevel: 1
   }
   countProds = (models) => models.reduce((res, model) => { return res + model.prods.length }, 0)
   componentWillReceiveProps(nextProps) {
+    // console.log(nextProps, this.props);
+    // HANDLE new curWork received from server
     if (!nextProps.curWork.curWork) return
-    // define mainWorkIsInProgress status
-    const mwRunning = (nextProps.curWork.curWork.workType === 'Прямые' && !nextProps.curWork.curWork.fin)
-    this.setState({ mainWorkIsInProgress: mwRunning })
-    // if (mwRunning !== this.state.mainWorkIsInProgress) {
-    //   this.setState({ mainWorkIsInProgress: mwRunning })
-    // }
-    const nextModels = nextProps.curWork.curWork.models
-    if (!nextModels) return
-    if (!this.props.curWork.curWork ||
-      !_.isEqual(nextModels, this.props.curWork.curWork.models)) {
-      this.setState({
-        selected: nextModels || [],
-        prodCount: this.countProds(nextModels || [])
-      })
+    const { workType, fin, models } = nextProps.curWork.curWork
+    // remove block of ExecControlPanel
+    const { panelBlockLevel } = this.state
+    if (panelBlockLevel === 2) {
+      if (!fin) this.blockPanel(0)
+    } else {
+      this.blockPanel(0)
     }
+    // set mainWorkIsInProgress status
+    this.setState({ mainWorkIsInProgress: (workType === 'Прямые' && !fin) })
+    // set selected poducts
+    if (!models) return
+    this.setState({
+      selected: models,
+      prodCount: this.countProds(models)
+    })
   }
   selectProd = (model) => {
-    const { selected } = this.state
+    const { selected, mainWorkIsInProgress } = this.state
+    // if mainWorkIsInProgress no alters allowed
+    if (mainWorkIsInProgress) return
+    // find provided model in selection set
     const foundModel = _.find(selected, {id: model.id})
-    // for now, only 1 model is available to work on
+    // for now, selection is limited to 1 model
     if (!foundModel && selected.length) return
     const newVal =
       !foundModel
@@ -65,9 +76,15 @@ class ExecView extends Component {
       prodCount: this.countProds(newVal)
     })
   }
-  deselect = () => this.setState({ selected: [], prodCount: 0 })
+  deselect = () => {
+    // if mainWorkIsInProgress no alters allowed
+    if (this.state.mainWorkIsInProgress) return
+    this.setState({ selected: [], prodCount: 0 })
+  }
+  blockPanel = (level) => this.setState({ panelBlockLevel: level })
   render() {
-    const { selected, prodCount, mainWorkIsInProgress } = this.state
+    // console.log('> ExecView');
+    const { selected, prodCount, mainWorkIsInProgress, panelBlockLevel } = this.state
     const { user, sidebarVisible, toggleSidebar, curWork: {loading, error, refetch, curWork} } = this.props
     return (
       <Fragment>
@@ -95,14 +112,27 @@ class ExecView extends Component {
         <Sidebar.Pushable as={Segment} className='komz-pushable'>
           <Sidebar as={Card} animation='overlay' visible={sidebarVisible} className='komz-sidebar'>
             <div className='komz-sidebar-container'>
-              <ModelList selected={selected} selectProd={this.selectProd}/>
-              <SelectedList selected={selected} deselect={this.deselect} />
+              <ModelList
+                selected={selected}
+                selectProd={this.selectProd}
+              />
+              <SelectedList
+                selected={selected}
+                deselect={this.deselect}
+                mainWorkIsInProgress={mainWorkIsInProgress}
+              />
             </div>
           </Sidebar>
           <Sidebar.Pusher>
             { loading ? 'Загрузка' :
               error ? 'Ошибка загрузки данных' :
-              <ExecControlPanel user={user} selected={selected} curWork={curWork} refetchCurWork={refetch}/>
+              <ExecControlPanel
+                user={user}
+                selected={selected}
+                curWork={curWork}
+                refetchCurWork={refetch}
+                panelBlockLevel={panelBlockLevel}
+                blockPanel={this.blockPanel}/>
             }
           </Sidebar.Pusher>
         </Sidebar.Pushable>
@@ -119,7 +149,13 @@ export default compose(
             name: 'curWork',
             // options: {
             //     fetchPolicy: 'cache-and-network',
-            // }
+            // },
+            props: props => {
+              console.log('> resolving curWork')
+              return {
+                ...props
+              }
+            }
         }
     ),
 )(ExecView)
